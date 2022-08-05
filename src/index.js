@@ -9,6 +9,7 @@ import classNames from 'classnames'
 import vmsg from './vmsg'
 
 import micIcon from './mic-icon-white.svg'
+import stopIcon from './stop-icon-white.svg'
 import wasmURL from './vmsg.wasm'
 
 import styles from './styles.css'
@@ -20,13 +21,15 @@ export default class Recorder extends Component {
     recorderParams: PropTypes.object,
     onRecordingComplete: PropTypes.func,
     onRecordingError: PropTypes.func,
-    className: PropTypes.string
+    className: PropTypes.string,
+    pressButtonForRecord: PropTypes.bool,
   }
 
   static defaultProps = {
     recorderParams: { },
     onRecordingComplete: () => { },
-    onRecordingError: () => { }
+    onRecordingError: () => { },
+    pressButtonForRecord: false,
   }
 
   state = {
@@ -45,21 +48,42 @@ export default class Recorder extends Component {
       onRecordingComplete,
       onRecordingError,
       className,
+      pressButtonForRecord,
       ...rest
-    } = this.props
+    } = this.props;
+
+    const {isRecording} = this.state;
 
     return (
       <div
         className={classNames(styles.container, className)}
         {...rest}
       >
-        <div
-          className={styles.button}
-          onMouseDown={this._onMouseDown}
-          onMouseUp={this._onMouseUp}
-        >
-          <img src={micIcon} width={24} height={24} />
-        </div>
+        {pressButtonForRecord && (
+          <div
+            className={styles.button}
+            onMouseDown={this._onInitRecording}
+            onMouseUp={this._onStopRecording}
+          >
+            <img src={micIcon} width={24} height={24} />
+          </div>
+        )}
+        {!pressButtonForRecord && !isRecording && (
+          <div
+            className={styles.button}
+            onClick={this._onInitRecording}
+          >
+            <img src={micIcon} width={24} height={24} />
+          </div>
+        )}
+        {!pressButtonForRecord && isRecording && (
+          <div
+            className={styles.button}
+            onClick={this._onStopRecording}
+          >
+            <img src={stopIcon} width={24} height={24} />
+          </div>
+        )}
       </div>
     )
   }
@@ -72,7 +96,7 @@ export default class Recorder extends Component {
     }
   }
 
-  _onMouseDown = () => {
+  _onInitRecording = () => {
     const {
       recorderParams
     } = this.props
@@ -93,10 +117,11 @@ export default class Recorder extends Component {
       .catch((err) => this.props.onRecordingError(err))
   }
 
-  _onMouseUp = () => {
+  _onStopRecording = () => {
     if (this._recorder) {
       this._recorder.stopRecording()
         .then((blob) => this.props.onRecordingComplete(blob))
+        .then(() => this.setState({ isRecording: false }))
         .catch((err) => this.props.onRecordingError(err))
     }
   }
